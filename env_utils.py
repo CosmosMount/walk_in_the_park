@@ -7,9 +7,8 @@ from dmcgym import DMCGYM
 from gym import spaces
 from gym.wrappers import FlattenObservation
 
-import sim
 from filter import ActionFilterWrapper
-from sim.robots import A1
+from sim.robots import Go1
 from sim.tasks import Run
 
 
@@ -45,15 +44,15 @@ def make_env(task_name: str,
              control_frequency: int = 33,
              randomize_ground: bool = True,
              action_history: int = 1):
-    robot = A1(action_history=action_history)
+    robot = Go1(action_history=action_history)
     # robot.kd = 5
 
-    if task_name == 'A1Run-v0':
+    if task_name == 'Go1Run-v0':
         task = Run(robot,
                    control_timestep=round(1.0 / control_frequency, 3),
                    randomize_ground=randomize_ground)
     else:
-        raise NotImplemented
+        raise NotImplementedError(f'Unsupported task_name: {task_name}')
 
     env = composer.Environment(task, strip_singleton_obs_buffer_dim=True)
 
@@ -83,14 +82,14 @@ def make_mujoco_env(env_name: str,
         env = ActionFilterWrapper(env, highcut=action_filter_high_cut)
 
     if clip_actions:
-        ACTION_OFFSET = np.asarray([0.2, 0.4, 0.4] * 4)
-        INIT_QPOS = sim.robots.a1.A1._INIT_QPOS
+        action_offset = np.asarray(Go1.action_offset())
+        init_qpos = np.asarray(Go1.init_qpos())
         if env.action_space.shape[0] == 12:
-            env = ClipAction(env, INIT_QPOS - ACTION_OFFSET,
-                             INIT_QPOS + ACTION_OFFSET)
+            env = ClipAction(env, init_qpos - action_offset,
+                             init_qpos + action_offset)
         else:
             env = ClipAction(
-                env, np.concatenate([INIT_QPOS - ACTION_OFFSET, [-1.0]]),
-                np.concatenate([INIT_QPOS + ACTION_OFFSET, [1.0]]))
+                env, np.concatenate([init_qpos - action_offset, [-1.0]]),
+                np.concatenate([init_qpos + action_offset, [1.0]]))
 
     return env

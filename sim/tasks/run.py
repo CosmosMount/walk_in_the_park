@@ -109,9 +109,15 @@ class Run(composer.Task):
 
         self._failure_termination = False
 
+        # Keep spawn pose aligned with the robot's active init-qpos config.
+        if hasattr(self._robot, '_init_qpos'):
+            init_qpos = self._robot._init_qpos
+        else:
+            init_qpos = self._robot._INIT_QPOS
+
         _find_non_contacting_height(physics,
                                     self._robot,
-                                    qpos=self._robot._INIT_QPOS)
+                                    qpos=init_qpos)
 
     def before_step(self, physics, action, random_state):
         pass
