@@ -43,14 +43,36 @@ class ClipAction(gym.ActionWrapper):
 def make_env(task_name: str,
              control_frequency: int = 33,
              randomize_ground: bool = True,
-             action_history: int = 1):
+             action_history: int = 1,
+             terminate_pitch_roll: Optional[float] = 12.0,
+             terminate_body_height: Optional[float] = None,
+             move_speed: float = 0.5,
+             randomize_move_speed: bool = False,
+             move_speed_min: float = 0.2,
+             move_speed_max: float = 1.0,
+             speed_upper_multiplier: float = 2.0,
+             reward_margin_scale: float = 2.0,
+             yaw_penalty_weight: float = 0.1,
+             tilt_penalty_weight: float = 1.0,
+             reward_scale: float = 10.0):
     robot = Go1(action_history=action_history)
     # robot.kd = 5
 
     if task_name == 'Go1Run-v0':
         task = Run(robot,
                    control_timestep=round(1.0 / control_frequency, 3),
-                   randomize_ground=randomize_ground)
+                   randomize_ground=randomize_ground,
+                   terminate_pitch_roll=terminate_pitch_roll,
+                   terminate_body_height=terminate_body_height,
+                   move_speed=move_speed,
+                   randomize_move_speed=randomize_move_speed,
+                   move_speed_min=move_speed_min,
+                   move_speed_max=move_speed_max,
+                   speed_upper_multiplier=speed_upper_multiplier,
+                   reward_margin_scale=reward_margin_scale,
+                   yaw_penalty_weight=yaw_penalty_weight,
+                   tilt_penalty_weight=tilt_penalty_weight,
+                   reward_scale=reward_scale)
     else:
         raise NotImplementedError(f'Unsupported task_name: {task_name}')
 
@@ -69,12 +91,37 @@ def make_mujoco_env(env_name: str,
                     control_frequency: int,
                     clip_actions: bool = True,
                     action_filter_high_cut: Optional[float] = -1,
-                    action_history: int = 1) -> gym.Env:
+                    action_history: int = 1,
+                    randomize_ground: bool = True,
+                    terminate_pitch_roll: Optional[float] = 12.0,
+                    terminate_body_height: Optional[float] = None,
+                    max_episode_steps: int = 400,
+                    move_speed: float = 0.5,
+                    randomize_move_speed: bool = False,
+                    move_speed_min: float = 0.2,
+                    move_speed_max: float = 1.0,
+                    speed_upper_multiplier: float = 2.0,
+                    reward_margin_scale: float = 2.0,
+                    yaw_penalty_weight: float = 0.1,
+                    tilt_penalty_weight: float = 1.0,
+                    reward_scale: float = 10.0) -> gym.Env:
     env = make_env(env_name,
                    control_frequency=control_frequency,
-                   action_history=action_history)
+                   action_history=action_history,
+                   randomize_ground=randomize_ground,
+                   terminate_pitch_roll=terminate_pitch_roll,
+                   terminate_body_height=terminate_body_height,
+                   move_speed=move_speed,
+                   randomize_move_speed=randomize_move_speed,
+                   move_speed_min=move_speed_min,
+                   move_speed_max=move_speed_max,
+                   speed_upper_multiplier=speed_upper_multiplier,
+                   reward_margin_scale=reward_margin_scale,
+                   yaw_penalty_weight=yaw_penalty_weight,
+                   tilt_penalty_weight=tilt_penalty_weight,
+                   reward_scale=reward_scale)
 
-    env = gym.wrappers.TimeLimit(env, 400)
+    env = gym.wrappers.TimeLimit(env, max_episode_steps)
 
     env = gym.wrappers.ClipAction(env)
 

@@ -35,3 +35,26 @@ MUJOCO_GL=egl XLA_PYTHON_CLIENT_PREALLOCATE=false python train_online.py --env_n
 ```
 
 The current branch is GO1 simulation-only.
+
+`train_online.py` now supports:
+- configurable episode cap (`--max_episode_steps`)
+- configurable early termination threshold (`--terminate_pitch_roll`)
+- configurable unsafe-height termination (`--terminate_body_height`)
+- longer and controllable videos (`--video_length`, `--video_interval`)
+- live visualization (`--visualize=True`, `--visualize_backend=matplotlib`)
+
+## MuJoCo Visual Training (Recommended for GO1)
+
+If you prefer a more intuitive/visual training loop for GO1 and easier terrain
+iteration, run:
+
+```bash
+python train_mujoco.py --env_name=Go1Run-v0 \
+    --utd_ratio=20 \
+    --start_training=1000 \
+    --max_steps=100000 \
+    --config=configs/droq_config.py \
+    --visualize=True
+```
+
+`train_mujuco.py` is also provided as a compatibility entrypoint.

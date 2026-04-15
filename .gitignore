@@ -132,3 +132,5 @@ dmypy.json
 videos/
 saved/
 wandb/
+tmp/
+tmp_upright_v3/
