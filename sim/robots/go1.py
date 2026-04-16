@@ -42,6 +42,11 @@ class Go1Observables(base.WalkerObservables):
 
 class Go1(base.Walker):
     _INIT_QPOS = np.asarray([0, 0.9, -1.8] * 4)
+    _JOINT_LIMITS_BY_SUFFIX = {
+        '_hip_joint': (-0.863, 0.863),
+        '_thigh_joint': (-0.686, 4.501),
+        '_calf_joint': (-2.818, -0.888),
+    }
 
     def _build(self,
                name: Optional[str] = None,
@@ -83,8 +88,20 @@ class Go1(base.Walker):
             joint = actuator.joint
             assert joint == joint_
 
-            minimum.append(joint.range[0])
-            maximum.append(joint.range[1])
+            joint_range = joint.range
+            if joint_range is None:
+                for suffix, limits in self._JOINT_LIMITS_BY_SUFFIX.items():
+                    if joint.name.endswith(suffix):
+                        joint_range = limits
+                        break
+
+            if joint_range is None:
+                raise ValueError(
+                    f'Failed to resolve action range for Go1 joint {joint.name!r}.'
+                )
+
+            minimum.append(joint_range[0])
+            maximum.append(joint_range[1])
 
         if self.kd is None:
             minimum.append(-1.0)
@@ -127,7 +144,7 @@ class Go1(base.Walker):
         minimum, maximum = self.ctrllimits
         action = np.clip(action, minimum, maximum)
 
-        physics.bind(self.actuators).ctrl = action
+        physics.data.ctrl[:] = np.asarray(action)
 
     def _build_observables(self):
         return Go1Observables(self)

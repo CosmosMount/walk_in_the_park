@@ -9,7 +9,7 @@ from gym.wrappers import FlattenObservation
 
 import sim
 from filter import ActionFilterWrapper
-from sim.robots import A1
+from sim.robots import A1, Go1
 from sim.tasks import Run
 
 
@@ -41,20 +41,48 @@ class ClipAction(gym.ActionWrapper):
         return np.clip(action, self.action_space.low, self.action_space.high)
 
 
+ROBOT_CONFIGS = {
+    'A1': {
+        'robot_class': A1,
+        'init_qpos': A1._INIT_QPOS,
+        'action_offset': np.asarray([0.2, 0.4, 0.4] * 4),
+    },
+    'Go1': {
+        'robot_class': Go1,
+        'init_qpos': Go1._INIT_QPOS,
+        'action_offset': np.asarray([0.2, 0.4, 0.4] * 4),
+    },
+}
+
+
+def _resolve_task_name(task_name: str) -> str:
+    if task_name == 'run':
+        return task_name
+
+    if task_name.endswith('Run-v0'):
+        return 'run'
+
+    raise NotImplementedError(
+        f"Unsupported env_name/task_name '{task_name}'. Expected 'run' or a '*Run-v0' Gym id."
+    )
+
+
 def make_env(task_name: str,
              control_frequency: int = 33,
              randomize_ground: bool = True,
-             action_history: int = 1):
-    robot = A1(action_history=action_history)
-    # robot.kd = 5
+             action_history: int = 1,
+             robot_class=None):
+    if robot_class is None:
+        robot_class = A1
 
-    if task_name == 'A1Run-v0':
+    robot = robot_class(action_history=action_history)
+
+    task_name = _resolve_task_name(task_name)
+
+    if task_name == 'run':
         task = Run(robot,
                    control_timestep=round(1.0 / control_frequency, 3),
                    randomize_ground=randomize_ground)
-    else:
-        raise NotImplemented
-
     env = composer.Environment(task, strip_singleton_obs_buffer_dim=True)
 
     env = DMCGYM(env)
@@ -70,10 +98,12 @@ def make_mujoco_env(env_name: str,
                     control_frequency: int,
                     clip_actions: bool = True,
                     action_filter_high_cut: Optional[float] = -1,
-                    action_history: int = 1) -> gym.Env:
+                    action_history: int = 1,
+                    robot_class=None) -> gym.Env:
     env = make_env(env_name,
                    control_frequency=control_frequency,
-                   action_history=action_history)
+                   action_history=action_history,
+                   robot_class=robot_class)
 
     env = gym.wrappers.TimeLimit(env, 400)
 
@@ -83,8 +113,15 @@ def make_mujoco_env(env_name: str,
         env = ActionFilterWrapper(env, highcut=action_filter_high_cut)
 
     if clip_actions:
-        ACTION_OFFSET = np.asarray([0.2, 0.4, 0.4] * 4)
-        INIT_QPOS = sim.robots.a1.A1._INIT_QPOS
+        if robot_class is None or robot_class == A1:
+            robot_name = 'A1'
+        else:
+            robot_name = 'Go1'
+
+        config = ROBOT_CONFIGS[robot_name]
+        INIT_QPOS = config['init_qpos']
+        ACTION_OFFSET = config['action_offset']
+
         if env.action_space.shape[0] == 12:
             env = ClipAction(env, INIT_QPOS - ACTION_OFFSET,
                              INIT_QPOS + ACTION_OFFSET)

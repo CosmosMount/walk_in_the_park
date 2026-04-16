@@ -4,9 +4,17 @@ Code to replicate [A Walk in the Park: Learning to Walk in 20 Minutes With Model
 
 ## Installation
 
-Install dependencies:
+Create a clean environment and install the pinned dependencies:
 ```bash
-pip install -r requirements.txt
+conda env create -f environment-jax-cuda12.yml
+conda activate park
+```
+
+If you want to reuse an existing `park` environment instead of recreating it,
+first remove the conflicting packages and then reinstall the pinned stack:
+```bash
+python -m pip uninstall -y gym numpy jax jaxlib jax-cuda12-pjrt jax-cuda12-plugin tensorflow tensorflow-cpu tensorflow-probability
+python -m pip install -r requirements.txt
 ```
 
 To install the robot [SDK](https://github.com/unitreerobotics/unitree_legged_sdk), first install the dependencies in the README.md
@@ -27,12 +35,33 @@ Finally, copy the built `robot_interface.XXX.so` file to this directory.
 Example command to run simulated training:
 
 ```bash
-MUJOCO_GL=egl XLA_PYTHON_CLIENT_PREALLOCATE=false python train_online.py --env_name=A1Run-v0 \
-                --utd_ratio=20 \
-                --start_training=1000 \
-                --max_steps=100000 \
-                --config=configs/droq_config.py
+./scripts/run_train_cuda.sh \
+    --env_name=A1Run-v0 \
+    --utd_ratio=20 \
+    --start_training=1000 \
+    --max_steps=100000 \
+    --config=configs/droq_config.py
 ```
 
 To run training on the real robot, add `--real_robot=True`
 
+Live preview for external viewing:
+```bash
+./scripts/run_train_cuda.sh \
+    --env_name=A1Run-v0 \
+    --utd_ratio=20 \
+    --start_training=1000 \
+    --max_steps=100000 \
+    --config=configs/droq_config.py \
+    --preview_stream=True \
+    --preview_host=0.0.0.0 \
+    --preview_port=8080
+```
+
+Then open `http://<your-machine-ip>:8080/` in a browser on another machine.
+
+Notes:
+- Do not export `JAX_PLATFORMS=gpu` with JAX 0.6.x. It expands to both `cuda`
+  and `rocm` and can fail before training starts.
+- The CUDA launcher prints the selected JAX backend at startup and fails fast if
+  the process does not land on `cuda`.

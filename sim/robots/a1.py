@@ -140,7 +140,7 @@ class A1(base.Walker):
         minimum, maximum = self.ctrllimits
         action = np.clip(action, minimum, maximum)
 
-        physics.bind(self.actuators).ctrl = action
+        physics.data.ctrl[:] = np.asarray(action)
 
     def _build_observables(self):
         return A1Observables(self)

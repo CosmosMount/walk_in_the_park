@@ -1,3 +1,10 @@
+.codex
+.vscode/
+wandb/
+tmp*/
+saved/
+videos/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
